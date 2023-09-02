@@ -49,6 +49,17 @@ public class AuthorizeFilter implements Ordered, GlobalFilter {
                 return response.setComplete();
             }
 
+            // 获取用户信息
+            Object userId = claimsBody.get("id");
+
+            // 存储header
+            ServerHttpRequest serverHttpRequest = request.mutate().headers(httpHeaders -> {
+                httpHeaders.add("userId", String.format("%s", userId));
+            }).build();
+
+            // 重制请求
+            exchange.mutate().request(serverHttpRequest);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
