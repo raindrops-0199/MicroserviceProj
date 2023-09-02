@@ -10,14 +10,11 @@ import com.heima.user.mapper.ApUserMapper;
 import com.heima.user.service.ApUserService;
 import com.heima.utils.common.AppJwtUtil;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.commons.lang.StringUtils;
-import org.jsoup.helper.StringUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
-import java.sql.Wrapper;
 import java.util.HashMap;
 import java.util.Map;
 

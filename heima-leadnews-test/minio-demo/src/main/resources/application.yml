@@ -1,0 +1,6 @@
+minio:
+  accessKey: minio
+  secretKey: 12345678
+  bucket: leadnews
+  endpoint: http://localhost:9000
+  readPath: http://localhost:9000
