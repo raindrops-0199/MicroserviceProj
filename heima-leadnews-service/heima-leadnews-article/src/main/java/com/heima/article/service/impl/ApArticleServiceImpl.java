@@ -128,7 +128,7 @@ public class ApArticleServiceImpl extends ServiceImpl<ApArticleMapper, ApArticle
             //修改文章内容
             ApArticleContent apArticleContent = apArticleContentMapper.selectOne(Wrappers.<ApArticleContent>lambdaQuery().eq(ApArticleContent::getArticleId, apArticle.getId()));
             if (apArticleContent == null) {
-                return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST);
+                throw new RuntimeException("ApArticleService-saveArticle-数据不存在");
             }
             apArticleContent.setContent(dto.getContent());
             apArticleContentMapper.updateById(apArticleContent);
