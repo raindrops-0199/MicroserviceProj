@@ -20,6 +20,6 @@ class WmNewsAutoScanServiceTest {
 
     @Test
     void autoScanWmNews() throws InvocationTargetException, IllegalAccessException {
-        wmNewsAutoScanService.autoScanWmNews(6234);
+        wmNewsAutoScanService.autoScanWmNews(6236);
     }
 }

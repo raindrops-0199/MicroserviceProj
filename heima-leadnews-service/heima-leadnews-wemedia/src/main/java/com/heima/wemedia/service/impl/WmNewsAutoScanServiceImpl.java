@@ -16,10 +16,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 @Service
@@ -36,7 +37,8 @@ public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
      * @param id 自媒体文章id
      */
     @Override
-    public void autoScanWmNews(Integer id) throws InvocationTargetException, IllegalAccessException {
+    @Async  // 标明当前方法为异步方法
+    public void autoScanWmNews(Integer id){
         // 1. 查询自媒体文章
         WmNews wmNews = wmNewsMapper.selectById(id);
         if (wmNews == null) {
@@ -84,7 +86,7 @@ public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
      * 保存app端相关的文章数据
      * @param wmNews
      */
-    private ResponseResult saveAppArticle(WmNews wmNews) throws InvocationTargetException, IllegalAccessException {
+    private ResponseResult saveAppArticle(WmNews wmNews) {
         ArticleDto articleDto = new ArticleDto();
 
         // 属性拷贝 拷贝了 content, channelId, title, labels, createdTime, publishTime
