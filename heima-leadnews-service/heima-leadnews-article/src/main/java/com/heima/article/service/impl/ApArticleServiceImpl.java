@@ -110,7 +110,7 @@ public class ApArticleServiceImpl extends ServiceImpl<ApArticleMapper, ApArticle
             save(apArticle);
 
             //保存文章配置
-            ApArticleConfig apArticleConfig = new ApArticleConfig(dto.getId());
+            ApArticleConfig apArticleConfig = new ApArticleConfig(apArticle.getId());
             apArticleConfigMapper.insert(apArticleConfig);
 
             //保存文章内容
