@@ -47,7 +47,7 @@ public class TaskServiceImpl implements TaskService {
     /**
      * 把任务添加到Redis中
      *
-     * @param task
+     * @param task Task dto
      */
     private void addTask2Cache(Task task) {
 
