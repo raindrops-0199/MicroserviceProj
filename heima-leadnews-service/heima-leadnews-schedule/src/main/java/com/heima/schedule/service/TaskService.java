@@ -17,4 +17,12 @@ public interface TaskService {
      * @return 取消是否成功
      */
     public boolean cancelTask(long taskId);
+
+    /**
+     * 按照类型和优先级拉取任务
+     * @param type 类型
+     * @param priority 优先级
+     * @return Task dto
+     */
+    public Task pool(int type, int priority);
 }

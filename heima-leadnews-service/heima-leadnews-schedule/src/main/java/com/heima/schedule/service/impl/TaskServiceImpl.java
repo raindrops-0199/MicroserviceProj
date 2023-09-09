@@ -10,6 +10,7 @@ import com.heima.schedule.mapper.TaskinfoLogsMapper;
 import com.heima.schedule.mapper.TaskinfoMapper;
 import com.heima.schedule.service.TaskService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -76,6 +77,33 @@ public class TaskServiceImpl implements TaskService {
         return true;
     }
 
+    /**
+     * 按照类型和优先级拉取任务
+     *
+     * @param type     类型
+     * @param priority 优先级
+     * @return Task dto
+     */
+    @Override
+    public Task pool(int type, int priority) {
+        Task task = null;
+        try {
+            // 1. 从redis中拉取数据
+            String key = type + "_" + priority;
+            String taskJson = cacheService.lRightPop(ScheduleConstants.TOPIC + key);
+            if (StringUtils.isNoneBlank(taskJson)) {
+                task = JSON.parseObject(taskJson, Task.class);
+
+                // 2. 更新数据库(删除任务， 更新任务日志)
+                updataDB(task.getTaskId(), ScheduleConstants.EXECUTED);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error("拉取任务失败 taskId");
+        }
+        return task;
+    }
+
     private Task updataDB(long taskId, int status) {
         Task task = null;
         try {
@@ -92,6 +120,7 @@ public class TaskServiceImpl implements TaskService {
             task.setExecuteTime(taskinfoLog.getExecuteTime().getTime());
 
         } catch (Exception e) {
+            e.printStackTrace();
             log.error("task cancel exception taskId={}", taskId);
         }
         return task;

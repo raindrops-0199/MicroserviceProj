@@ -46,4 +46,10 @@ class TaskServiceImplTest {
         boolean res = taskService.cancelTask(taskId);
         assertTrue(res);
     }
+
+    @Test
+    void pollTest() {
+        Task task = taskService.pool(100, 50);
+        System.out.println(task);
+    }
 }
