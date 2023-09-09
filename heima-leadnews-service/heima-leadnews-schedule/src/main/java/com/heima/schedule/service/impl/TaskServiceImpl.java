@@ -1,6 +1,7 @@
 package com.heima.schedule.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.heima.common.constants.ScheduleConstants;
 import com.heima.common.redis.CacheService;
 import com.heima.model.schedule.dtos.Task;
@@ -17,8 +18,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -34,6 +37,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Autowired
     private CacheService cacheService;
+
 
     /**
      * 添加延迟任务
@@ -53,6 +57,7 @@ public class TaskServiceImpl implements TaskService {
         }
         return task.getTaskId();
     }
+
 
     /**
      * 取消任务
@@ -78,6 +83,7 @@ public class TaskServiceImpl implements TaskService {
 
         return true;
     }
+
 
     /**
      * 按照类型和优先级拉取任务
@@ -105,6 +111,7 @@ public class TaskServiceImpl implements TaskService {
         }
         return task;
     }
+
 
     /**
      * 未来数据定时刷新，每分钟刷新一次
@@ -141,6 +148,42 @@ public class TaskServiceImpl implements TaskService {
     }
 
 
+    /**
+     * 数据库任务定时同步到redis
+     */
+
+
+    @PostConstruct
+    @Scheduled(cron = "0 */5 * * * ?")
+    public void reloadData() {
+
+        // 清理缓存中的数据
+        clearCache();
+
+        // 查询符合条件的任务
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.MINUTE, ScheduleConstants.NEXT_SCHEDULE_TIME);
+        List<Taskinfo> taskinfos = taskinfoMapper.selectList(Wrappers.<Taskinfo>lambdaQuery().lt(Taskinfo::getExecuteTime, calendar.getTime()));
+
+        // 把任务添加到redis
+        if (taskinfos != null && taskinfos.size() > 0) {
+            for (Taskinfo taskinfo : taskinfos) {
+                Task task = new Task();
+                BeanUtils.copyProperties(taskinfo, task);
+                task.setExecuteTime(taskinfo.getExecuteTime().getTime());
+                addTask2Cache(task);
+            }
+        }
+        log.info("数据库任务同步到Redis");
+    }
+
+    public void clearCache() {
+        Set<String> topicKeys = cacheService.scan(ScheduleConstants.TOPIC + "*");
+        Set<String> futureKeys = cacheService.scan(ScheduleConstants.FUTURE + "*");
+        cacheService.delete(topicKeys);
+        cacheService.delete(futureKeys);
+    }
+
 
 
 
@@ -166,6 +209,7 @@ public class TaskServiceImpl implements TaskService {
         return task;
     }
 
+
     /**
      * 把任务添加到Redis中
      *
@@ -189,6 +233,7 @@ public class TaskServiceImpl implements TaskService {
             cacheService.zAdd(ScheduleConstants.FUTURE + key, JSON.toJSONString(task), task.getExecuteTime());
         }
     }
+
 
     /**
      * 添加任务到数据库
