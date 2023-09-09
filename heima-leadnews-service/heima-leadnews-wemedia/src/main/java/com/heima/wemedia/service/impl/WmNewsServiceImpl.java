@@ -22,6 +22,7 @@ import com.heima.wemedia.mapper.WmNewsMapper;
 import com.heima.wemedia.mapper.WmNewsMaterialMapper;
 import com.heima.wemedia.service.WmNewsAutoScanService;
 import com.heima.wemedia.service.WmNewsService;
+import com.heima.wemedia.service.WmNewsTaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -89,7 +90,10 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
     }
 
     @Autowired
-    WmNewsAutoScanService wmNewsAutoScanService;
+    private WmNewsAutoScanService wmNewsAutoScanService;
+
+    @Autowired
+    private WmNewsTaskService wmNewsTaskService;
 
     /**
      * 发布修改文章或保存为草稿
@@ -142,7 +146,8 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         saveRelativeInfoForCover(dto, wmNews, materials);
 
         // 审核文章
-        wmNewsAutoScanService.autoScanWmNews(wmNews.getId());
+        // wmNewsAutoScanService.autoScanWmNews(wmNews.getId());
+         wmNewsTaskService.addNews2Task(wmNews.getId(), wmNews.getPublishTime());
 
         return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
     }
@@ -157,8 +162,12 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
     private void saveOrUpdateWmNews(WmNews wmNews) {
         // 补全属性
         wmNews.setUserId(WmThreadLocalUtil.getUser().getId());
-        wmNews.setCreatedTime(new Date());
-        wmNews.setPublishTime(new Date());
+        if (wmNews.getCreatedTime() == null) {
+            wmNews.setCreatedTime(new Date());
+        }
+        if (wmNews.getPublishTime() == null) {
+            wmNews.setPublishTime(new Date());
+        }
         wmNews.setEnable((short)1); // 默认上架
 
         if (wmNews.getId() == null) {
