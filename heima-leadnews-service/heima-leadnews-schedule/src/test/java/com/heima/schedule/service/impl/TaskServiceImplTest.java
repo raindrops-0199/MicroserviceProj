@@ -52,4 +52,17 @@ class TaskServiceImplTest {
         Task task = taskService.pool(100, 50);
         System.out.println(task);
     }
+
+    @Test
+    public void add5Task() {
+        for (int i = 0; i < 5; i++) {
+            Task task = new Task();
+            task.setTaskType(100 + i);
+            task.setPriority(50);
+            task.setParameters("task test".getBytes());
+            task.setExecuteTime(System.currentTimeMillis() + 50000 * i);
+
+            taskService.addTask(task);
+        }
+    }
 }

@@ -13,11 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -103,6 +105,44 @@ public class TaskServiceImpl implements TaskService {
         }
         return task;
     }
+
+    /**
+     * 未来数据定时刷新，每分钟刷新一次
+     */
+    @Scheduled(cron = "0 */1 * * * ? ")
+    public void refresh() {
+
+        String token = cacheService.tryLock("FUTURE_TASK_SYNC", 1000 * 30);
+        if (token != null) {
+
+            log.info("未来数据定时刷新--定时任务");
+
+            // 1. 获取所有未来数据的key的集合
+            Set<String> futureKeys = cacheService.scan(ScheduleConstants.FUTURE + "*");
+
+            // 2. 按照key和分值查询符合条件的数据
+            for (String futureKey : futureKeys) { // future_100_50
+
+                // 获取当前数据对应的topic key
+                String topicKey = ScheduleConstants.TOPIC + futureKey.split(ScheduleConstants.FUTURE)[1];
+
+
+                Set<String> tasks = cacheService.zRangeByScore(futureKey, 0, System.currentTimeMillis());
+
+                // 3. 同步数据，使用redis管道
+                if (!tasks.isEmpty()) {
+                    cacheService.refreshWithPipeline(futureKey, topicKey, tasks);
+
+                    log.info("成功将" + futureKey + "刷新到" + topicKey);
+                }
+            }
+        }
+
+    }
+
+
+
+
 
     private Task updataDB(long taskId, int status) {
         Task task = null;
