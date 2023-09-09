@@ -28,15 +28,22 @@ class TaskServiceImplTest {
         task.setParameters("task_tes".getBytes());
 
         // 立即执行
-        // task.setExecuteTime(new Date().getTime());
+        task.setExecuteTime(new Date().getTime());
 
         // 延迟执行, 加入zset
         //task.setExecuteTime(System.currentTimeMillis() + 1000 * 60 * 4);
 
         // 延迟执行，超过预设时间，不存入Redis
-        task.setExecuteTime(System.currentTimeMillis() + 1000 * 60 * 6);
+        //task.setExecuteTime(System.currentTimeMillis() + 1000 * 60 * 6);
 
         long taskId = taskService.addTask(task);
         System.out.println(taskId);
+    }
+
+    @Test
+    void cancelTest() {
+        long taskId = 1700433490000084993L;
+        boolean res = taskService.cancelTask(taskId);
+        assertTrue(res);
     }
 }

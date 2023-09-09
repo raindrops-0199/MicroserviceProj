@@ -10,4 +10,11 @@ public interface TaskService {
      * @return taskId
      */
     public long addTask(Task task);
+
+    /**
+     * 取消任务
+     * @param taskId 任务id
+     * @return 取消是否成功
+     */
+    public boolean cancelTask(long taskId);
 }

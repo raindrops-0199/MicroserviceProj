@@ -22,6 +22,16 @@ import java.util.Date;
 @Transactional
 @Slf4j
 public class TaskServiceImpl implements TaskService {
+
+    @Autowired
+    private TaskinfoMapper taskinfoMapper;
+
+    @Autowired
+    private TaskinfoLogsMapper taskinfoLogsMapper;
+
+    @Autowired
+    private CacheService cacheService;
+
     /**
      * 添加延迟任务
      *
@@ -41,8 +51,51 @@ public class TaskServiceImpl implements TaskService {
         return task.getTaskId();
     }
 
-    @Autowired
-    private CacheService cacheService;
+    /**
+     * 取消任务
+     *
+     * @param taskId 任务id
+     * @return 取消是否成功
+     */
+    @Override
+    public boolean cancelTask(long taskId) {
+        // 1. 删除任务，更新任务日志
+        Task task = updataDB(taskId, ScheduleConstants.CANCELLED);
+
+        // 2. 删除Redis数据
+        if (task == null) {
+            return false;
+        }
+        String key = task.getTaskType() + "_" + task.getPriority();
+        if (task.getExecuteTime() <= System.currentTimeMillis()) {
+            cacheService.lRemove(ScheduleConstants.TOPIC + key, 0, JSON.toJSONString(task));
+        } else {
+            cacheService.zRemove(ScheduleConstants.FUTURE + key, JSON.toJSONString(task));
+        }
+
+        return true;
+    }
+
+    private Task updataDB(long taskId, int status) {
+        Task task = null;
+        try {
+            // delete task info
+            taskinfoMapper.deleteById(taskId);
+
+            // update task info log
+            TaskinfoLogs taskinfoLog = taskinfoLogsMapper.selectById(taskId);
+            taskinfoLog.setStatus(status);
+            taskinfoLogsMapper.updateById(taskinfoLog);
+
+            task = new Task();
+            BeanUtils.copyProperties(taskinfoLog, task);
+            task.setExecuteTime(taskinfoLog.getExecuteTime().getTime());
+
+        } catch (Exception e) {
+            log.error("task cancel exception taskId={}", taskId);
+        }
+        return task;
+    }
 
     /**
      * 把任务添加到Redis中
@@ -67,13 +120,6 @@ public class TaskServiceImpl implements TaskService {
             cacheService.zAdd(ScheduleConstants.FUTURE + key, JSON.toJSONString(task), task.getExecuteTime());
         }
     }
-
-
-    @Autowired
-    private TaskinfoMapper taskinfoMapper;
-
-    @Autowired
-    private TaskinfoLogsMapper taskinfoLogsMapper;
 
     /**
      * 添加任务到数据库
