@@ -157,24 +157,28 @@ public class TaskServiceImpl implements TaskService {
     @Scheduled(cron = "0 */5 * * * ?")
     public void reloadData() {
 
-        // 清理缓存中的数据
-        clearCache();
+        String token = cacheService.tryLock("DB_TASK_SYNC", 1000 * 60);
+        if (token != null) {
 
-        // 查询符合条件的任务
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.MINUTE, ScheduleConstants.NEXT_SCHEDULE_TIME);
-        List<Taskinfo> taskinfos = taskinfoMapper.selectList(Wrappers.<Taskinfo>lambdaQuery().lt(Taskinfo::getExecuteTime, calendar.getTime()));
+            // 清理缓存中的数据
+            clearCache();
 
-        // 把任务添加到redis
-        if (taskinfos != null && taskinfos.size() > 0) {
-            for (Taskinfo taskinfo : taskinfos) {
-                Task task = new Task();
-                BeanUtils.copyProperties(taskinfo, task);
-                task.setExecuteTime(taskinfo.getExecuteTime().getTime());
-                addTask2Cache(task);
+            // 查询符合条件的任务
+            Calendar calendar = Calendar.getInstance();
+            calendar.add(Calendar.MINUTE, ScheduleConstants.NEXT_SCHEDULE_TIME);
+            List<Taskinfo> taskinfos = taskinfoMapper.selectList(Wrappers.<Taskinfo>lambdaQuery().lt(Taskinfo::getExecuteTime, calendar.getTime()));
+
+            // 把任务添加到redis
+            if (taskinfos != null && taskinfos.size() > 0) {
+                for (Taskinfo taskinfo : taskinfos) {
+                    Task task = new Task();
+                    BeanUtils.copyProperties(taskinfo, task);
+                    task.setExecuteTime(taskinfo.getExecuteTime().getTime());
+                    addTask2Cache(task);
+                }
             }
+            log.info("数据库任务同步到Redis");
         }
-        log.info("数据库任务同步到Redis");
     }
 
     public void clearCache() {
